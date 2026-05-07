@@ -179,13 +179,13 @@
     <!-- Yatay iç duvarlar -->
     <model name="h_wall_1">
       <static>true</static>
-      <pose>-2.5 -2.0 0.5 0 0 0</pose>
+      <pose>-2.75 -2.0 0.5 0 0 0</pose>
       <link name="link">
         <collision name="collision">
-          <geometry><box><size>2.0 0.15 1.0</size></box></geometry>
+          <geometry><box><size>1.5 0.15 1.0</size></box></geometry>
         </collision>
         <visual name="visual">
-          <geometry><box><size>2.0 0.15 1.0</size></box></geometry>
+          <geometry><box><size>1.5 0.15 1.0</size></box></geometry>
           <material><ambient>0.55 0.45 0.35 1</ambient><diffuse>0.65 0.55 0.45 1</diffuse></material>
         </visual>
       </link>
@@ -320,13 +320,13 @@
     <!-- Dikey iç duvarlar -->
     <model name="v_wall_1">
       <static>true</static>
-      <pose>-2.0 -2.75 0.5 0 0 0</pose>
+      <pose>-2.0 -3.0 0.5 0 0 0</pose>
       <link name="link">
         <collision name="collision">
-          <geometry><box><size>0.15 1.5 1.0</size></box></geometry>
+          <geometry><box><size>0.15 1.0 1.0</size></box></geometry>
         </collision>
         <visual name="visual">
-          <geometry><box><size>0.15 1.5 1.0</size></box></geometry>
+          <geometry><box><size>0.15 1.0 1.0</size></box></geometry>
           <material><ambient>0.55 0.45 0.35 1</ambient><diffuse>0.65 0.55 0.45 1</diffuse></material>
         </visual>
       </link>
