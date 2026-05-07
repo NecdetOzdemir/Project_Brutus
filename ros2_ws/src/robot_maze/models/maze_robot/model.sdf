@@ -1,0 +1,250 @@
+<?xml version="1.0" ?>
+<!--
+  ╔══════════════════════════════════════════════════════════════╗
+  ║  Project Brutus - Robot Modeli (maze_robot)                  ║
+  ║                                                              ║
+  ║  Tip: Diferansiyel Sürüş (2 tekerlekli + 1 caster)         ║
+  ║  Sensör: 360° Lidar → /scan topic                           ║
+  ║  Hareket: /cmd_vel topic (geometry_msgs/Twist)              ║
+  ╚══════════════════════════════════════════════════════════════╝
+-->
+<sdf version="1.6">
+  <model name="brutus_robot">
+
+    <!-- ── ANA GÖVDE (CHASSIS) ──────────────────────────────── -->
+    <link name="base_link">
+      <pose>0 0 0.1 0 0 0</pose>
+
+      <inertial>
+        <mass>1.5</mass>
+        <inertia>
+          <ixx>0.0281</ixx><ixy>0</ixy><ixz>0</ixz>
+          <iyy>0.0340</iyy><iyz>0</iyz>
+          <izz>0.0540</izz>
+        </inertia>
+      </inertial>
+
+      <collision name="chassis_collision">
+        <geometry><box><size>0.35 0.25 0.10</size></box></geometry>
+      </collision>
+
+      <visual name="chassis_visual">
+        <geometry><box><size>0.35 0.25 0.10</size></box></geometry>
+        <material>
+          <!-- Koyu gri-mavi renk - "Brutus" teması -->
+          <ambient>0.15 0.20 0.35 1</ambient>
+          <diffuse>0.20 0.28 0.48 1</diffuse>
+          <specular>0.4 0.4 0.5 32</specular>
+        </material>
+      </visual>
+    </link>
+
+    <!-- ── SOL TEKERLEK ─────────────────────────────────────── -->
+    <link name="left_wheel">
+      <pose>0.0 0.145 0.04 -1.5707 0 0</pose>
+
+      <inertial>
+        <mass>0.25</mass>
+        <inertia>
+          <ixx>0.000244</ixx><ixy>0</ixy><ixz>0</ixz>
+          <iyy>0.000244</iyy><iyz>0</iyz>
+          <izz>0.000469</izz>
+        </inertia>
+      </inertial>
+
+      <collision name="collision">
+        <geometry><cylinder><radius>0.055</radius><length>0.04</length></cylinder></geometry>
+        <surface><friction><ode><mu>1.0</mu><mu2>1.0</mu2></ode></friction></surface>
+      </collision>
+
+      <visual name="visual">
+        <geometry><cylinder><radius>0.055</radius><length>0.04</length></cylinder></geometry>
+        <material>
+          <ambient>0.1 0.1 0.1 1</ambient>
+          <diffuse>0.15 0.15 0.15 1</diffuse>
+        </material>
+      </visual>
+    </link>
+
+    <joint name="left_wheel_joint" type="revolute">
+      <parent>base_link</parent>
+      <child>left_wheel</child>
+      <axis>
+        <xyz>0 0 1</xyz>
+        <limit><lower>-1e+16</lower><upper>1e+16</upper></limit>
+      </axis>
+    </joint>
+
+    <!-- ── SAĞ TEKERLEK ─────────────────────────────────────── -->
+    <link name="right_wheel">
+      <pose>0.0 -0.145 0.04 -1.5707 0 0</pose>
+
+      <inertial>
+        <mass>0.25</mass>
+        <inertia>
+          <ixx>0.000244</ixx><ixy>0</ixy><ixz>0</ixz>
+          <iyy>0.000244</iyy><iyz>0</iyz>
+          <izz>0.000469</izz>
+        </inertia>
+      </inertial>
+
+      <collision name="collision">
+        <geometry><cylinder><radius>0.055</radius><length>0.04</length></cylinder></geometry>
+        <surface><friction><ode><mu>1.0</mu><mu2>1.0</mu2></ode></friction></surface>
+      </collision>
+
+      <visual name="visual">
+        <geometry><cylinder><radius>0.055</radius><length>0.04</length></cylinder></geometry>
+        <material>
+          <ambient>0.1 0.1 0.1 1</ambient>
+          <diffuse>0.15 0.15 0.15 1</diffuse>
+        </material>
+      </visual>
+    </link>
+
+    <joint name="right_wheel_joint" type="revolute">
+      <parent>base_link</parent>
+      <child>right_wheel</child>
+      <axis>
+        <xyz>0 0 1</xyz>
+        <limit><lower>-1e+16</lower><upper>1e+16</upper></limit>
+      </axis>
+    </joint>
+
+    <!-- ── CASTER (DESTEK TEKERLEĞİ) ──────────────────────── -->
+    <link name="caster_wheel">
+      <pose>-0.15 0 0.015 0 0 0</pose>
+
+      <inertial>
+        <mass>0.05</mass>
+        <inertia>
+          <ixx>0.000009</ixx><ixy>0</ixy><ixz>0</ixz>
+          <iyy>0.000009</iyy><iyz>0</iyz>
+          <izz>0.000009</izz>
+        </inertia>
+      </inertial>
+
+      <collision name="collision">
+        <geometry><sphere><radius>0.025</radius></sphere></geometry>
+        <surface>
+          <friction>
+            <ode><mu>0.0</mu><mu2>0.0</mu2></ode>
+          </friction>
+        </surface>
+      </collision>
+
+      <visual name="visual">
+        <geometry><sphere><radius>0.025</radius></sphere></geometry>
+        <material><ambient>0.3 0.3 0.3 1</ambient></material>
+      </visual>
+    </link>
+
+    <joint name="caster_joint" type="ball">
+      <parent>base_link</parent>
+      <child>caster_wheel</child>
+    </joint>
+
+    <!-- ── LIDAR SENSÖRü ────────────────────────────────────── -->
+    <!--
+      360° tarama, 5Hz, 360 nokta
+      Mesafe aralığı: 0.12m - 10.0m
+      Topic: /scan (sensor_msgs/LaserScan)
+    -->
+    <link name="lidar_link">
+      <pose>0.0 0.0 0.175 0 0 0</pose>
+
+      <inertial>
+        <mass>0.05</mass>
+        <inertia>
+          <ixx>0.000001</ixx><ixy>0</ixy><ixz>0</ixz>
+          <iyy>0.000001</iyy><iyz>0</iyz>
+          <izz>0.000001</izz>
+        </inertia>
+      </inertial>
+
+      <collision name="collision">
+        <geometry><cylinder><radius>0.04</radius><length>0.05</length></cylinder></geometry>
+      </collision>
+
+      <visual name="visual">
+        <geometry><cylinder><radius>0.04</radius><length>0.05</length></cylinder></geometry>
+        <material>
+          <!-- Lidar: sarı accent rengi -->
+          <ambient>0.8 0.7 0.0 1</ambient>
+          <diffuse>1.0 0.85 0.0 1</diffuse>
+        </material>
+      </visual>
+
+      <sensor name="lidar" type="ray">
+        <always_on>true</always_on>
+        <visualize>true</visualize>
+        <update_rate>5</update_rate>
+
+        <ray>
+          <scan>
+            <horizontal>
+              <samples>360</samples>
+              <resolution>1</resolution>
+              <min_angle>-3.14159</min_angle>
+              <max_angle>3.14159</max_angle>
+            </horizontal>
+          </scan>
+          <range>
+            <min>0.12</min>
+            <max>10.0</max>
+            <resolution>0.01</resolution>
+          </range>
+          <noise>
+            <type>gaussian</type>
+            <mean>0.0</mean>
+            <stddev>0.01</stddev>
+          </noise>
+        </ray>
+
+        <!-- ROS 2 uyumlu Gazebo plugin -->
+        <plugin name="gazebo_ros_ray_sensor" filename="libgazebo_ros_ray_sensor.so">
+          <ros>
+            <remapping>~/out:=/scan</remapping>
+          </ros>
+          <output_type>sensor_msgs/LaserScan</output_type>
+          <frame_name>lidar_link</frame_name>
+        </plugin>
+      </sensor>
+    </link>
+
+    <joint name="lidar_joint" type="fixed">
+      <parent>base_link</parent>
+      <child>lidar_link</child>
+    </joint>
+
+    <!-- ── DİFERANSİYEL SÜRÜŞ PLUGINi ────────────────────── -->
+    <!--
+      /cmd_vel → geometry_msgs/Twist
+      /odom   → nav_msgs/Odometry
+    -->
+    <plugin name="differential_drive" filename="libgazebo_ros_diff_drive.so">
+      <ros>
+        <remapping>/cmd_vel:=/cmd_vel</remapping>
+        <remapping>/odom:=/odom</remapping>
+      </ros>
+
+      <!-- Tekerlek geometrisi -->
+      <left_joint>left_wheel_joint</left_joint>
+      <right_joint>right_wheel_joint</right_joint>
+      <wheel_separation>0.29</wheel_separation>
+      <wheel_diameter>0.11</wheel_diameter>
+
+      <!-- Hız limitleri -->
+      <max_wheel_torque>20</max_wheel_torque>
+      <max_wheel_acceleration>1.0</max_wheel_acceleration>
+
+      <!-- Odometri ayarları -->
+      <odometry_frame>odom</odometry_frame>
+      <robot_base_frame>base_link</robot_base_frame>
+      <publish_odom>true</publish_odom>
+      <publish_odom_tf>true</publish_odom_tf>
+      <publish_wheel_tf>false</publish_wheel_tf>
+    </plugin>
+
+  </model>
+</sdf>

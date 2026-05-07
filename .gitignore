@@ -1,0 +1,26 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+.venv/
+.env
+venv/
+ENV/
+
+# ROS 2 (Colcon)
+ros2_ws/build/
+ros2_ws/install/
+ros2_ws/log/
+
+# Gazebo logları
+.gazebo/
+
+# VS Code / IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db

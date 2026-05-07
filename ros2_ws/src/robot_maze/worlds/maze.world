@@ -1,0 +1,529 @@
+<?xml version="1.0" ?>
+<!--
+  ╔══════════════════════════════════════════════════════════════╗
+  ║  Project Brutus - Labirent Dünyası (maze.world)             ║
+  ║  Diferansiyel sürüşlü robot + PPO navigasyon               ║
+  ║                                                              ║
+  ║  İçerik:                                                     ║
+  ║    - 7x7 labirent duvarları (SDF formatı)                   ║
+  ║    - Robot başlangıç noktası: (0, 0, 0)                     ║
+  ║    - Hedef Marker (Goal): kırmızı silindir, köşede          ║
+  ╚══════════════════════════════════════════════════════════════╝
+-->
+<sdf version="1.6">
+  <world name="maze_world">
+
+    <!-- ── IŞIK (inline - internet bağlantısı gerektirmez) ──── -->
+    <light name="sun" type="directional">
+      <cast_shadows>true</cast_shadows>
+      <pose>0 0 10 0 0 0</pose>
+      <diffuse>0.9 0.9 0.9 1</diffuse>
+      <specular>0.3 0.3 0.3 1</specular>
+      <attenuation>
+        <range>1000</range>
+        <constant>0.9</constant>
+        <linear>0.01</linear>
+        <quadratic>0.001</quadratic>
+      </attenuation>
+      <direction>-0.5 0.1 -0.9</direction>
+    </light>
+
+    <!-- ── ZEMİN (inline) ────────────────────────────────────── -->
+    <model name="ground_plane">
+      <static>true</static>
+      <link name="link">
+        <collision name="collision">
+          <geometry>
+            <plane>
+              <normal>0 0 1</normal>
+              <size>20 20</size>
+            </plane>
+          </geometry>
+          <surface>
+            <friction><ode><mu>100</mu><mu2>50</mu2></ode></friction>
+          </surface>
+        </collision>
+        <visual name="visual">
+          <cast_shadows>false</cast_shadows>
+          <geometry>
+            <plane>
+              <normal>0 0 1</normal>
+              <size>20 20</size>
+            </plane>
+          </geometry>
+          <material>
+            <ambient>0.22 0.22 0.22 1</ambient>
+            <diffuse>0.28 0.28 0.28 1</diffuse>
+          </material>
+        </visual>
+      </link>
+    </model>
+
+    <!-- ── GUI AYARLARI (Kamera Başlangıç Pozisyonu) ───────── -->
+    <gui fullscreen='0'>
+      <camera name='user_camera'>
+        <pose>0.0 -12.0 15.0 0 0.9 1.57</pose>
+        <view_controller>orbit</view_controller>
+        <projection_type>perspective</projection_type>
+      </camera>
+    </gui>
+
+    <physics type="ode">
+      <real_time_update_rate>1000.0</real_time_update_rate>
+      <max_step_size>0.001</max_step_size>
+      <real_time_factor>1</real_time_factor>
+      <ode>
+        <solver>
+          <type>quick</type>
+          <iters>150</iters>
+          <precon_iters>0</precon_iters>
+          <sor>1.400000</sor>
+        </solver>
+        <constraints>
+          <cfm>0.00001</cfm>
+          <erp>0.2</erp>
+          <contact_max_correcting_vel>2000.000000</contact_max_correcting_vel>
+          <contact_surface_layer>0.01000</contact_surface_layer>
+        </constraints>
+      </ode>
+    </physics>
+
+    <!-- ── LABIRENT DUVARLARI ───────────────────────────────── -->
+    <!--
+      Labirent Grid: 7 sütun x 7 satır
+      Her hücre 1.0m x 1.0m, duvar kalınlığı 0.15m, yükseklik 1.0m
+      Robot başlangıcı: (0.0, 0.0) - iç orta bölge
+      Hedef: (5.0, 5.0) - sağ üst köşe
+    -->
+
+    <!-- Dış Çevre Duvarları -->
+    <!-- Güney duvarı (alt) -->
+    <model name="wall_south">
+      <static>true</static>
+      <pose>0 -3.5 0.5 0 0 0</pose>
+      <link name="link">
+        <collision name="collision">
+          <geometry><box><size>7.3 0.15 1.0</size></box></geometry>
+        </collision>
+        <visual name="visual">
+          <geometry><box><size>7.3 0.15 1.0</size></box></geometry>
+          <material>
+            <ambient>0.6 0.6 0.6 1</ambient>
+            <diffuse>0.7 0.7 0.7 1</diffuse>
+          </material>
+        </visual>
+      </link>
+    </model>
+
+    <!-- Kuzey duvarı (üst) -->
+    <model name="wall_north">
+      <static>true</static>
+      <pose>0 3.5 0.5 0 0 0</pose>
+      <link name="link">
+        <collision name="collision">
+          <geometry><box><size>7.3 0.15 1.0</size></box></geometry>
+        </collision>
+        <visual name="visual">
+          <geometry><box><size>7.3 0.15 1.0</size></box></geometry>
+          <material>
+            <ambient>0.6 0.6 0.6 1</ambient>
+            <diffuse>0.7 0.7 0.7 1</diffuse>
+          </material>
+        </visual>
+      </link>
+    </model>
+
+    <!-- Batı duvarı (sol) -->
+    <model name="wall_west">
+      <static>true</static>
+      <pose>-3.5 0 0.5 0 0 0</pose>
+      <link name="link">
+        <collision name="collision">
+          <geometry><box><size>0.15 7.3 1.0</size></box></geometry>
+        </collision>
+        <visual name="visual">
+          <geometry><box><size>0.15 7.3 1.0</size></box></geometry>
+          <material>
+            <ambient>0.6 0.6 0.6 1</ambient>
+            <diffuse>0.7 0.7 0.7 1</diffuse>
+          </material>
+        </visual>
+      </link>
+    </model>
+
+    <!-- Doğu duvarı (sağ) -->
+    <model name="wall_east">
+      <static>true</static>
+      <pose>3.5 0 0.5 0 0 0</pose>
+      <link name="link">
+        <collision name="collision">
+          <geometry><box><size>0.15 7.3 1.0</size></box></geometry>
+        </collision>
+        <visual name="visual">
+          <geometry><box><size>0.15 7.3 1.0</size></box></geometry>
+          <material>
+            <ambient>0.6 0.6 0.6 1</ambient>
+            <diffuse>0.7 0.7 0.7 1</diffuse>
+          </material>
+        </visual>
+      </link>
+    </model>
+
+    <!-- ── İÇ LABIRENT DUVARLARI (7x7 Grid) ─────────────────── -->
+    <!--
+      Çözüm yolu: (0,0) → (1,0) → (1,1) → (1,2) → (2,2) →
+                  (2,3) → (3,3) → (3,4) → (4,4) → (5,4) → (5,5)
+      Duvarlar bu yolun dışındaki boşlukları kapatır.
+    -->
+
+    <!-- Yatay iç duvarlar -->
+    <model name="h_wall_1">
+      <static>true</static>
+      <pose>-2.5 -2.0 0.5 0 0 0</pose>
+      <link name="link">
+        <collision name="collision">
+          <geometry><box><size>2.0 0.15 1.0</size></box></geometry>
+        </collision>
+        <visual name="visual">
+          <geometry><box><size>2.0 0.15 1.0</size></box></geometry>
+          <material><ambient>0.55 0.45 0.35 1</ambient><diffuse>0.65 0.55 0.45 1</diffuse></material>
+        </visual>
+      </link>
+    </model>
+
+    <model name="h_wall_2">
+      <static>true</static>
+      <pose>0.5 -2.0 0.5 0 0 0</pose>
+      <link name="link">
+        <collision name="collision">
+          <geometry><box><size>2.0 0.15 1.0</size></box></geometry>
+        </collision>
+        <visual name="visual">
+          <geometry><box><size>2.0 0.15 1.0</size></box></geometry>
+          <material><ambient>0.55 0.45 0.35 1</ambient><diffuse>0.65 0.55 0.45 1</diffuse></material>
+        </visual>
+      </link>
+    </model>
+
+    <model name="h_wall_3">
+      <static>true</static>
+      <pose>-1.5 -1.0 0.5 0 0 0</pose>
+      <link name="link">
+        <collision name="collision">
+          <geometry><box><size>3.0 0.15 1.0</size></box></geometry>
+        </collision>
+        <visual name="visual">
+          <geometry><box><size>3.0 0.15 1.0</size></box></geometry>
+          <material><ambient>0.55 0.45 0.35 1</ambient><diffuse>0.65 0.55 0.45 1</diffuse></material>
+        </visual>
+      </link>
+    </model>
+
+    <model name="h_wall_4">
+      <static>true</static>
+      <pose>2.0 -1.0 0.5 0 0 0</pose>
+      <link name="link">
+        <collision name="collision">
+          <geometry><box><size>2.0 0.15 1.0</size></box></geometry>
+        </collision>
+        <visual name="visual">
+          <geometry><box><size>2.0 0.15 1.0</size></box></geometry>
+          <material><ambient>0.55 0.45 0.35 1</ambient><diffuse>0.65 0.55 0.45 1</diffuse></material>
+        </visual>
+      </link>
+    </model>
+
+    <model name="h_wall_5">
+      <static>true</static>
+      <pose>-2.0 0.0 0.5 0 0 0</pose>
+      <link name="link">
+        <collision name="collision">
+          <geometry><box><size>2.0 0.15 1.0</size></box></geometry>
+        </collision>
+        <visual name="visual">
+          <geometry><box><size>2.0 0.15 1.0</size></box></geometry>
+          <material><ambient>0.55 0.45 0.35 1</ambient><diffuse>0.65 0.55 0.45 1</diffuse></material>
+        </visual>
+      </link>
+    </model>
+
+    <model name="h_wall_6">
+      <static>true</static>
+      <pose>1.5 0.0 0.5 0 0 0</pose>
+      <link name="link">
+        <collision name="collision">
+          <geometry><box><size>3.0 0.15 1.0</size></box></geometry>
+        </collision>
+        <visual name="visual">
+          <geometry><box><size>3.0 0.15 1.0</size></box></geometry>
+          <material><ambient>0.55 0.45 0.35 1</ambient><diffuse>0.65 0.55 0.45 1</diffuse></material>
+        </visual>
+      </link>
+    </model>
+
+    <model name="h_wall_7">
+      <static>true</static>
+      <pose>-0.5 1.0 0.5 0 0 0</pose>
+      <link name="link">
+        <collision name="collision">
+          <geometry><box><size>3.0 0.15 1.0</size></box></geometry>
+        </collision>
+        <visual name="visual">
+          <geometry><box><size>3.0 0.15 1.0</size></box></geometry>
+          <material><ambient>0.55 0.45 0.35 1</ambient><diffuse>0.65 0.55 0.45 1</diffuse></material>
+        </visual>
+      </link>
+    </model>
+
+    <model name="h_wall_8">
+      <static>true</static>
+      <pose>2.5 1.0 0.5 0 0 0</pose>
+      <link name="link">
+        <collision name="collision">
+          <geometry><box><size>1.0 0.15 1.0</size></box></geometry>
+        </collision>
+        <visual name="visual">
+          <geometry><box><size>1.0 0.15 1.0</size></box></geometry>
+          <material><ambient>0.55 0.45 0.35 1</ambient><diffuse>0.65 0.55 0.45 1</diffuse></material>
+        </visual>
+      </link>
+    </model>
+
+    <model name="h_wall_9">
+      <static>true</static>
+      <pose>-2.5 2.0 0.5 0 0 0</pose>
+      <link name="link">
+        <collision name="collision">
+          <geometry><box><size>2.0 0.15 1.0</size></box></geometry>
+        </collision>
+        <visual name="visual">
+          <geometry><box><size>2.0 0.15 1.0</size></box></geometry>
+          <material><ambient>0.55 0.45 0.35 1</ambient><diffuse>0.65 0.55 0.45 1</diffuse></material>
+        </visual>
+      </link>
+    </model>
+
+    <model name="h_wall_10">
+      <static>true</static>
+      <pose>1.0 2.0 0.5 0 0 0</pose>
+      <link name="link">
+        <collision name="collision">
+          <geometry><box><size>2.0 0.15 1.0</size></box></geometry>
+        </collision>
+        <visual name="visual">
+          <geometry><box><size>2.0 0.15 1.0</size></box></geometry>
+          <material><ambient>0.55 0.45 0.35 1</ambient><diffuse>0.65 0.55 0.45 1</diffuse></material>
+        </visual>
+      </link>
+    </model>
+
+    <!-- Dikey iç duvarlar -->
+    <model name="v_wall_1">
+      <static>true</static>
+      <pose>-2.0 -2.75 0.5 0 0 0</pose>
+      <link name="link">
+        <collision name="collision">
+          <geometry><box><size>0.15 1.5 1.0</size></box></geometry>
+        </collision>
+        <visual name="visual">
+          <geometry><box><size>0.15 1.5 1.0</size></box></geometry>
+          <material><ambient>0.55 0.45 0.35 1</ambient><diffuse>0.65 0.55 0.45 1</diffuse></material>
+        </visual>
+      </link>
+    </model>
+
+    <model name="v_wall_2">
+      <static>true</static>
+      <pose>1.0 -2.75 0.5 0 0 0</pose>
+      <link name="link">
+        <collision name="collision">
+          <geometry><box><size>0.15 1.5 1.0</size></box></geometry>
+        </collision>
+        <visual name="visual">
+          <geometry><box><size>0.15 1.5 1.0</size></box></geometry>
+          <material><ambient>0.55 0.45 0.35 1</ambient><diffuse>0.65 0.55 0.45 1</diffuse></material>
+        </visual>
+      </link>
+    </model>
+
+    <model name="v_wall_3">
+      <static>true</static>
+      <pose>-1.0 -1.5 0.5 0 0 0</pose>
+      <link name="link">
+        <collision name="collision">
+          <geometry><box><size>0.15 2.0 1.0</size></box></geometry>
+        </collision>
+        <visual name="visual">
+          <geometry><box><size>0.15 2.0 1.0</size></box></geometry>
+          <material><ambient>0.55 0.45 0.35 1</ambient><diffuse>0.65 0.55 0.45 1</diffuse></material>
+        </visual>
+      </link>
+    </model>
+
+    <model name="v_wall_4">
+      <static>true</static>
+      <pose>2.0 -1.5 0.5 0 0 0</pose>
+      <link name="link">
+        <collision name="collision">
+          <geometry><box><size>0.15 2.0 1.0</size></box></geometry>
+        </collision>
+        <visual name="visual">
+          <geometry><box><size>0.15 2.0 1.0</size></box></geometry>
+          <material><ambient>0.55 0.45 0.35 1</ambient><diffuse>0.65 0.55 0.45 1</diffuse></material>
+        </visual>
+      </link>
+    </model>
+
+    <model name="v_wall_5">
+      <static>true</static>
+      <pose>0.0 -0.5 0.5 0 0 0</pose>
+      <link name="link">
+        <collision name="collision">
+          <geometry><box><size>0.15 2.0 1.0</size></box></geometry>
+        </collision>
+        <visual name="visual">
+          <geometry><box><size>0.15 2.0 1.0</size></box></geometry>
+          <material><ambient>0.55 0.45 0.35 1</ambient><diffuse>0.65 0.55 0.45 1</diffuse></material>
+        </visual>
+      </link>
+    </model>
+
+    <model name="v_wall_6">
+      <static>true</static>
+      <pose>-3.0 0.75 0.5 0 0 0</pose>
+      <link name="link">
+        <collision name="collision">
+          <geometry><box><size>0.15 1.5 1.0</size></box></geometry>
+        </collision>
+        <visual name="visual">
+          <geometry><box><size>0.15 1.5 1.0</size></box></geometry>
+          <material><ambient>0.55 0.45 0.35 1</ambient><diffuse>0.65 0.55 0.45 1</diffuse></material>
+        </visual>
+      </link>
+    </model>
+
+    <model name="v_wall_7">
+      <static>true</static>
+      <pose>1.0 0.5 0.5 0 0 0</pose>
+      <link name="link">
+        <collision name="collision">
+          <geometry><box><size>0.15 2.0 1.0</size></box></geometry>
+        </collision>
+        <visual name="visual">
+          <geometry><box><size>0.15 2.0 1.0</size></box></geometry>
+          <material><ambient>0.55 0.45 0.35 1</ambient><diffuse>0.65 0.55 0.45 1</diffuse></material>
+        </visual>
+      </link>
+    </model>
+
+    <model name="v_wall_8">
+      <static>true</static>
+      <pose>-2.0 1.75 0.5 0 0 0</pose>
+      <link name="link">
+        <collision name="collision">
+          <geometry><box><size>0.15 1.5 1.0</size></box></geometry>
+        </collision>
+        <visual name="visual">
+          <geometry><box><size>0.15 1.5 1.0</size></box></geometry>
+          <material><ambient>0.55 0.45 0.35 1</ambient><diffuse>0.65 0.55 0.45 1</diffuse></material>
+        </visual>
+      </link>
+    </model>
+
+    <model name="v_wall_9">
+      <static>true</static>
+      <pose>3.0 1.5 0.5 0 0 0</pose>
+      <link name="link">
+        <collision name="collision">
+          <geometry><box><size>0.15 2.0 1.0</size></box></geometry>
+        </collision>
+        <visual name="visual">
+          <geometry><box><size>0.15 2.0 1.0</size></box></geometry>
+          <material><ambient>0.55 0.45 0.35 1</ambient><diffuse>0.65 0.55 0.45 1</diffuse></material>
+        </visual>
+      </link>
+    </model>
+
+    <model name="v_wall_10">
+      <static>true</static>
+      <pose>0.0 2.75 0.5 0 0 0</pose>
+      <link name="link">
+        <collision name="collision">
+          <geometry><box><size>0.15 1.5 1.0</size></box></geometry>
+        </collision>
+        <visual name="visual">
+          <geometry><box><size>0.15 1.5 1.0</size></box></geometry>
+          <material><ambient>0.55 0.45 0.35 1</ambient><diffuse>0.65 0.55 0.45 1</diffuse></material>
+        </visual>
+      </link>
+    </model>
+
+    <!-- ── HEDEF MARKER (GOAL) ──────────────────────────────── -->
+    <!--
+      Kırmızı silindir: Robotun ulaşması gereken hedef nokta
+      Pozisyon: (2.5, 2.5, 0) - labirentin sağ üst bölgesi
+      Bu model STATIC'tir; sadece görsel referans işlevi görür.
+      Gerçek hedef tespiti /odom ile mesafe hesabıyla yapılır.
+    -->
+    <model name="goal_marker">
+      <static>true</static>
+      <pose>2.5 2.5 0.3 0 0 0</pose>
+      <link name="link">
+        <collision name="collision">
+          <geometry>
+            <cylinder>
+              <radius>0.15</radius>
+              <length>0.6</length>
+            </cylinder>
+          </geometry>
+        </collision>
+        <visual name="visual">
+          <geometry>
+            <cylinder>
+              <radius>0.15</radius>
+              <length>0.6</length>
+            </cylinder>
+          </geometry>
+          <material>
+            <!-- Parlak kırmızı - hedef -->
+            <ambient>1.0 0.1 0.1 1</ambient>
+            <diffuse>1.0 0.0 0.0 1</diffuse>
+            <specular>0.5 0.5 0.5 64</specular>
+            <emissive>0.3 0.0 0.0 1</emissive>
+          </material>
+        </visual>
+      </link>
+    </model>
+
+    <!-- Hedef üstüne ışık (spotlight) -->
+    <light name="goal_light" type="spot">
+      <pose>2.5 2.5 2.0 0 0 0</pose>
+      <diffuse>1 0.3 0.3 1</diffuse>
+      <specular>0.5 0.1 0.1 1</specular>
+      <attenuation>
+        <range>3</range>
+        <linear>0.1</linear>
+        <quadratic>0.01</quadratic>
+      </attenuation>
+      <direction>0 0 -1</direction>
+      <spot>
+        <inner_angle>0.6</inner_angle>
+        <outer_angle>1.0</outer_angle>
+        <falloff>1.0</falloff>
+      </spot>
+      <cast_shadows>false</cast_shadows>
+    </light>
+
+    <!-- ── ROBOT SPAWN NOKTASI ─────────────────────────────── -->
+    <!--
+      Robot bu dosya içinde tanımlanmaz.
+      Spawn işlemi launch dosyası üzerinden yapılır:
+        ros2 run gazebo_ros spawn_entity.py
+          -entity brutus_robot
+          -file $(find robot_maze)/models/maze_robot/model.sdf
+          -x -2.5 -y -2.5 -z 0.1
+      Başlangıç noktası: (-2.5, -2.5) - sol alt köşe
+    -->
+
+  </world>
+</sdf>
