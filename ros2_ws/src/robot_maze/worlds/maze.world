@@ -12,6 +12,14 @@
 -->
 <sdf version="1.6">
   <world name="maze_world">
+    <!-- ── IGNITION GAZEBO TEMEL SİSTEMLERİ ── -->
+    <plugin filename="libignition-gazebo-physics-system.so" name="ignition::gazebo::systems::Physics"></plugin>
+    <plugin filename="libignition-gazebo-user-commands-system.so" name="ignition::gazebo::systems::UserCommands"></plugin>
+    <plugin filename="libignition-gazebo-scene-broadcaster-system.so" name="ignition::gazebo::systems::SceneBroadcaster"></plugin>
+    <plugin filename="libignition-gazebo-sensors-system.so" name="ignition::gazebo::systems::Sensors">
+      <render_engine>ogre2</render_engine>
+    </plugin>
+    <plugin filename="libignition-gazebo-contact-system.so" name="ignition::gazebo::systems::Contact"></plugin>
 
     <!-- ── IŞIK (inline - internet bağlantısı gerektirmez) ──── -->
     <light name="sun" type="directional">
@@ -68,24 +76,9 @@
       </camera>
     </gui>
 
-    <physics type="ode">
-      <real_time_update_rate>1000.0</real_time_update_rate>
+    <physics name="1ms" type="ignored">
       <max_step_size>0.001</max_step_size>
-      <real_time_factor>1</real_time_factor>
-      <ode>
-        <solver>
-          <type>quick</type>
-          <iters>150</iters>
-          <precon_iters>0</precon_iters>
-          <sor>1.400000</sor>
-        </solver>
-        <constraints>
-          <cfm>0.00001</cfm>
-          <erp>0.2</erp>
-          <contact_max_correcting_vel>2000.000000</contact_max_correcting_vel>
-          <contact_surface_layer>0.01000</contact_surface_layer>
-        </constraints>
-      </ode>
+      <real_time_factor>1.0</real_time_factor>
     </physics>
 
     <!-- ── LABIRENT DUVARLARI ───────────────────────────────── -->
@@ -488,7 +481,7 @@
             <!-- Parlak kırmızı - hedef -->
             <ambient>1.0 0.1 0.1 1</ambient>
             <diffuse>1.0 0.0 0.0 1</diffuse>
-            <specular>0.5 0.5 0.5 64</specular>
+            <specular>0.5 0.5 0.5 1</specular>
             <emissive>0.3 0.0 0.0 1</emissive>
           </material>
         </visual>

@@ -34,7 +34,7 @@
           <!-- Koyu gri-mavi renk - "Brutus" teması -->
           <ambient>0.15 0.20 0.35 1</ambient>
           <diffuse>0.20 0.28 0.48 1</diffuse>
-          <specular>0.4 0.4 0.5 32</specular>
+          <specular>0.4 0.4 0.5 1</specular>
         </material>
       </visual>
     </link>
@@ -175,12 +175,12 @@
         </material>
       </visual>
 
-      <sensor name="lidar" type="ray">
+      <sensor name="lidar" type="gpu_lidar">
         <always_on>true</always_on>
-        <visualize>true</visualize>
         <update_rate>5</update_rate>
-
-        <ray>
+        <topic>scan</topic>
+        <gz_frame_id>lidar_link</gz_frame_id>
+        <lidar>
           <scan>
             <horizontal>
               <samples>360</samples>
@@ -194,21 +194,7 @@
             <max>10.0</max>
             <resolution>0.01</resolution>
           </range>
-          <noise>
-            <type>gaussian</type>
-            <mean>0.0</mean>
-            <stddev>0.01</stddev>
-          </noise>
-        </ray>
-
-        <!-- ROS 2 uyumlu Gazebo plugin -->
-        <plugin name="gazebo_ros_ray_sensor" filename="libgazebo_ros_ray_sensor.so">
-          <ros>
-            <remapping>~/out:=/scan</remapping>
-          </ros>
-          <output_type>sensor_msgs/LaserScan</output_type>
-          <frame_name>lidar_link</frame_name>
-        </plugin>
+        </lidar>
       </sensor>
     </link>
 
@@ -222,28 +208,18 @@
       /cmd_vel → geometry_msgs/Twist
       /odom   → nav_msgs/Odometry
     -->
-    <plugin name="differential_drive" filename="libgazebo_ros_diff_drive.so">
-      <ros>
-        <remapping>/cmd_vel:=/cmd_vel</remapping>
-        <remapping>/odom:=/odom</remapping>
-      </ros>
-
-      <!-- Tekerlek geometrisi -->
+    <plugin
+      filename="libignition-gazebo-diff-drive-system.so"
+      name="ignition::gazebo::systems::DiffDrive">
       <left_joint>left_wheel_joint</left_joint>
       <right_joint>right_wheel_joint</right_joint>
       <wheel_separation>0.29</wheel_separation>
-      <wheel_diameter>0.11</wheel_diameter>
-
-      <!-- Hız limitleri -->
-      <max_wheel_torque>20</max_wheel_torque>
-      <max_wheel_acceleration>1.0</max_wheel_acceleration>
-
-      <!-- Odometri ayarları -->
-      <odometry_frame>odom</odometry_frame>
-      <robot_base_frame>base_link</robot_base_frame>
-      <publish_odom>true</publish_odom>
-      <publish_odom_tf>true</publish_odom_tf>
-      <publish_wheel_tf>false</publish_wheel_tf>
+      <wheel_radius>0.055</wheel_radius>
+      <odom_publish_frequency>50</odom_publish_frequency>
+      <topic>cmd_vel</topic>
+      <odom_topic>odom</odom_topic>
+      <frame_id>odom</frame_id>
+      <child_frame_id>base_link</child_frame_id>
     </plugin>
 
   </model>
